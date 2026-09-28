@@ -21,8 +21,14 @@ Thumbs.db
 # Build / runtime
 dist/
 build/
+frontend/dist/
 *.log
+*.tsbuildinfo
 
 # Node
 node_modules/
 .pnpm-store/
+
+# Cloudflare / Vite local state
+.wrangler/
+frontend/.vite/
