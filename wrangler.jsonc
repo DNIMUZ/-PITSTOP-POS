@@ -10,5 +10,9 @@
   "vars": {
     "API_BASE": "https://YOUR-SERVICE.onrender.com"
   },
+  "build": {
+    "command": "npm run build",
+    "cwd": "./frontend"
+  },
   "previews": {}
 }
