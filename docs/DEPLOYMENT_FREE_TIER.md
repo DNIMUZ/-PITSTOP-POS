@@ -1,4 +1,4 @@
-# Deployment — free-tier stack (Supabase + Render + Cloudflare Pages)
+# Deployment — free-tier stack (Supabase + Render + Cloudflare)
 
 Three free building blocks for a real, non-Docker deployment:
 
@@ -48,21 +48,40 @@ sequences all work fine on the direct connection.
 
 4. Health check path: `/api/v1/health`. Free tier sleeps after 15 min idle.
 
-## 3. Frontend — Cloudflare Pages
+## 3. Frontend — Cloudflare
+
+### Option A: Workers (default, already configured)
+
+A `wrangler.jsonc` at the repo root deploys the SPA as a Worker with static
+assets (`frontend/dist`) plus a tiny proxy (`frontend/scripts/worker.js`) that
+forwards `/api/*` to the backend. SPA fallback is handled by
+`not_found_handling: "single-page-application"`.
+
+- Preview: `npx wrangler preview` (also what the Cloudflare dashboard runs) or `npm run cf:preview`.
+- Live: `npm run cf:deploy` → `https://pitstop-pos.diniemuzaffar.workers.dev`.
+- Point the proxy at the backend by setting the **`API_BASE`** binding:
+  - locally: `npx wrangler deploy --var API_BASE:https://<your-service>.onrender.com`
+  - or edit `vars` in `wrangler.jsonc` (placeholder must be replaced once Render is live).
+
+### Option B: Pages
 
 1. Create a Pages project → connect repo → **framework: Vite**, root `frontend`, build command `npm run build`, output directory `dist`.
-2. The SPA already calls relative `/api/...` paths. `frontend/public/_redirects` is copied into the build and forwards them to Render:
+2. The SPA calls relative `/api/...` paths; `frontend/public/_redirects` is copied into the build and forwards them to Render:
    ```
    /api/*  https://<your-service>.onrender.com/api/:splat  200
    ```
    **Edit the placeholder host after your Render service is live.**
 3. Deploy. Visit `https://<your-subdomain>.pages.dev`.
 
+> Either way: **until the backend is deployed and the proxy/`_redirects` host
+> points at it, the online site's API calls fail** — the shell loads, login
+> does not. That is expected while the API only runs on your laptop.
+
 ## One-time data setup (from your machine, after merging)
 
 ```powershell
 cd backend
-$env:DATABASE_URL = "postgresql+asyncpg://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require"
+$env:DATABASE_URL = "postgresql+asyncpg://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres?ssl=require"
 uv run alembic upgrade head
 uv run python -m app.seed       # demo users, 36 products, ~360 transactions
 ```
@@ -74,7 +93,7 @@ uv run python -m app.seed       # demo users, 36 products, ~360 transactions
 - [ ] `_redirects` host edited to the actual Render URL.
 - [ ] `EXPOSE_DOCS=false`.
 - [ ] Demo credentials (`admin/Admin@2026`, etc.) changed or users replaced.
-- [ ] Health check `/api/v1/health` registered (Render restarts on failure).
+- [ ] Health check `/health` registered (Render restarts on failure).
 - [ ] Supabase → Project Settings → Database → enable **point-in-time restore / daily backups** if available on your plan.
 
 ## Upgrade path (when "free" stops being enough)

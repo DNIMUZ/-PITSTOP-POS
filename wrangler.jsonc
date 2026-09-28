@@ -1,0 +1,14 @@
+{
+  "name": "pitstop-pos",
+  "main": "frontend/scripts/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "vars": {
+    "API_BASE": "https://YOUR-SERVICE.onrender.com"
+  },
+  "previews": {}
+}
