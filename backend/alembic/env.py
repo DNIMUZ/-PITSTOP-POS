@@ -44,7 +44,10 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    config.set_main_option("sqlalchemy.url", get_settings().DATABASE_URL)
+    url = get_settings().DATABASE_URL
+    # ConfigParser treats `%` as interpolation syntax; percent signs in
+    # encoded passwords (e.g. Supabase) must be doubled.
+    config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
