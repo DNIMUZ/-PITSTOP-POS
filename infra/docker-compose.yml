@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pitstop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pitstop_dev_password}
+      POSTGRES_DB: pitstop_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pitstop -d pitstop_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://pitstop:${POSTGRES_PASSWORD:-pitstop_dev_password}@db:5432/pitstop_dev
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in your .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8080"]}
+      TAX_RATE_PERCENT: ${TAX_RATE_PERCENT:-8.00}
+      LOGIN_RATE_LIMIT: ${LOGIN_RATE_LIMIT:-10/minute}
+      EXPOSE_DOCS: ${EXPOSE_DOCS:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:

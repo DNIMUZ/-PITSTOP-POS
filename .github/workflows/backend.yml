@@ -1,0 +1,46 @@
+name: backend
+
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**"]
+  pull_request:
+    paths: ["backend/**"]
+
+jobs:
+  test:
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pitstop
+          POSTGRES_PASSWORD: pitstop_dev_password
+          POSTGRES_DB: pitstop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pitstop -d pitstop_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync --all-extras
+      - name: Lint
+        run: uv run ruff check .
+      - name: Migrate test DB
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://pitstop:pitstop_dev_password@localhost:5432/pitstop_test
+          APP_ENV: testing
+      - name: Run tests
+        run: uv run pytest -q
+        env:
+          DATABASE_URL: postgresql+asyncpg://pitstop:pitstop_dev_password@localhost:5432/pitstop_test
+          APP_ENV: testing

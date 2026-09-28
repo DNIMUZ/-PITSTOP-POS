@@ -1,0 +1,1 @@
+"""PITSTOP POS backend package."""
